@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Thesis</string>
+    <string name="ble_not_supported">bluetooth ble not supoort in this version</string>
+</resources>
