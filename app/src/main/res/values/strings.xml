@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Thesis</string>
     <string name="ble_not_supported">bluetooth ble not supoort in this version</string>
+    <string name="unknown_device">Unknow Device</string>
+    <string name="title_activity_device_scan">DeviceScanActivity</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="action_settings">Settings</string>
 </resources>
