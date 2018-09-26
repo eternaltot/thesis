@@ -12,13 +12,10 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.animation.AnimationUtils;
 import android.support.design.widget.FloatingActionButton;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -141,8 +138,7 @@ public class MainActivity extends ListActivity  {
         private ArrayList<Double> mRssis;
         private LayoutInflater mInflator;
 
-        public double calculateDistance(int rssi){
-            int txPower = -69;
+        public double calculateDistance(int rssi,int txPower){
             if(rssi == 0){
                 return -1.0;
             }
@@ -158,8 +154,8 @@ public class MainActivity extends ListActivity  {
             mInflator = MainActivity.this.getLayoutInflater();
         }
 
-        public void addDevice(BluetoothDevice device,int rssi) {
-            double distance = calculateDistance(rssi);
+        public void addDevice(BluetoothDevice device,int rssi,int txPower) {
+            double distance = calculateDistance(rssi,txPower);
             if(!mLeDevices.contains(device) && device.getName()!= null && device.getName().length() > 0) {
                 mLeDevices.add(device);
                 mRssis.add(Double.valueOf(distance));
@@ -224,15 +220,22 @@ public class MainActivity extends ListActivity  {
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
-
+                int i =0;
+                int avg_rssi=0;
                 @Override
-                public void onLeScan(final BluetoothDevice device,final int rssi, byte[] scanRecord) {
+                public void onLeScan(final BluetoothDevice device,final int rssi,final byte[] scanRecord) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            if(i<5){
 
-                            mLeDeviceListAdapter.addDevice(device,rssi);
-                            mLeDeviceListAdapter.notifyDataSetChanged();
+                            }else{
+                                byte txpw = scanRecord[29];
+                                mLeDeviceListAdapter.addDevice(device,rssi,(int)txpw);
+                                mLeDeviceListAdapter.notifyDataSetChanged();
+                                i = 0 ;
+                            }
+                            i++;
                         }
                     });
                 }

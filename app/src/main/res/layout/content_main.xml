@@ -9,7 +9,7 @@
     tools:showIn="@layout/activity_main">
 
     <ListView
-        android:id="@+id/list_device"
+        android:id="@android:id/list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="vertical"
