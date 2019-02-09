@@ -11,8 +11,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +23,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 public class MainActivity extends ListActivity  {
@@ -34,13 +41,16 @@ public class MainActivity extends ListActivity  {
     private static final long SCAN_PERIOD = 10000;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
     private int i = 0;
-
-
+    private File path;
+    private FileOutputStream outputStream;
+    private String filename = "log.txt";
+    private ArrayList<String> list_device = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mHandler = new Handler();
         setContentView(R.layout.activity_main);
+        path = Environment.getDataDirectory();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
@@ -48,7 +58,9 @@ public class MainActivity extends ListActivity  {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
             finish();
         }
-
+        list_device.add("3C:A3:08:97:E0:F9");
+        list_device.add("3C:A3:08:97:E4:B0");
+        list_device.add("3C:A3:08:97:DA:5A");
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
         // BluetoothAdapter through BluetoothManager.
         final BluetoothManager bluetoothManager =
@@ -87,8 +99,18 @@ public class MainActivity extends ListActivity  {
         }
 
         // Initializes list view adapter.
-        mLeDeviceListAdapter = new LeDeviceListAdapter();
-        setListAdapter(mLeDeviceListAdapter);
+
+        try {
+            outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
+            mLeDeviceListAdapter = new LeDeviceListAdapter(filename,outputStream);
+            setListAdapter(mLeDeviceListAdapter);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
 //        scanLeDevice(true);
     }
 
@@ -107,6 +129,11 @@ public class MainActivity extends ListActivity  {
         super.onPause();
         scanLeDevice(false);
         mLeDeviceListAdapter.clear();
+        try {
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -137,6 +164,8 @@ public class MainActivity extends ListActivity  {
         private ArrayList<BluetoothDevice> mLeDevices;
         private ArrayList<Double> mRssis;
         private LayoutInflater mInflator;
+        String filename = "log.txt";
+        FileOutputStream outputStream;
 
         public double calculateDistance(int rssi,int txPower){
             if(rssi == 0){
@@ -147,11 +176,13 @@ public class MainActivity extends ListActivity  {
             return distance;
         }
 
-        public LeDeviceListAdapter() {
+        public LeDeviceListAdapter(String filename,FileOutputStream outputStream) {
             super();
             mLeDevices = new ArrayList<BluetoothDevice>();
             mRssis = new ArrayList<Double>();
             mInflator = MainActivity.this.getLayoutInflater();
+            this.filename = filename;
+            this.outputStream = outputStream;
         }
 
         public void addDevice(BluetoothDevice device,int rssi,int txPower) {
@@ -163,6 +194,16 @@ public class MainActivity extends ListActivity  {
             if(mLeDevices.contains(device)){
                 int index = mLeDevices.indexOf(device);
                 mRssis.set(index,Double.valueOf(distance));
+            }
+            if(list_device.contains(device.getAddress())){
+                try {
+                    String fileContents = device.getAddress()+"\t"+String.valueOf(rssi)+"\t"+String.valueOf(distance)+"\n";
+                    outputStream.write(fileContents.getBytes());
+                    Log.d("Write to File","Write Success");
+                    Log.d("Tx Power",String.valueOf(txPower));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -220,22 +261,14 @@ public class MainActivity extends ListActivity  {
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
-                int i =0;
-                int avg_rssi=0;
                 @Override
                 public void onLeScan(final BluetoothDevice device,final int rssi,final byte[] scanRecord) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if(i<5){
-
-                            }else{
-                                byte txpw = scanRecord[29];
-                                mLeDeviceListAdapter.addDevice(device,rssi,(int)txpw);
-                                mLeDeviceListAdapter.notifyDataSetChanged();
-                                i = 0 ;
-                            }
-                            i++;
+                            byte txpw = scanRecord[29];
+                            mLeDeviceListAdapter.addDevice(device,rssi,(int)txpw);
+                            mLeDeviceListAdapter.notifyDataSetChanged();
                         }
                     });
                 }
