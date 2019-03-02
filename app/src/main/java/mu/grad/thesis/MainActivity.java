@@ -45,6 +45,7 @@ public class MainActivity extends ListActivity  {
     private FileOutputStream outputStream;
     private String filename = "log.txt";
     private ArrayList<String> list_device = new ArrayList<>();
+    private int write_count = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,6 +62,7 @@ public class MainActivity extends ListActivity  {
         list_device.add("3C:A3:08:97:E0:F9");
         list_device.add("3C:A3:08:97:E4:B0");
         list_device.add("3C:A3:08:97:DA:5A");
+        list_device.add("3C:A3:08:97:E4:E3");
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
         // BluetoothAdapter through BluetoothManager.
         final BluetoothManager bluetoothManager =
@@ -201,6 +203,8 @@ public class MainActivity extends ListActivity  {
                     outputStream.write(fileContents.getBytes());
                     Log.d("Write to File","Write Success");
                     Log.d("Tx Power",String.valueOf(txPower));
+                    Log.d("Write count",String.valueOf(write_count));
+                    write_count++;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
